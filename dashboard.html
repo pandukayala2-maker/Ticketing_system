@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Kuwait Hospital Ticketing</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body id="dashboard-app">
+
+  <header class="header">
+    <div class="container header-content">
+      <div class="flex items-center gap-4">
+        <a href="index.html" class="header-logo">
+          <i class="fas fa-hospital-symbol"></i>
+          Kuwait Hospital
+        </a>
+      </div>
+      <div class="user-profile">
+        <div class="text-right hidden md-block" style="margin-right: 15px;">
+          <div id="user-name" class="font-bold text-sm">...</div>
+          <div id="user-role-label" class="text-xs text-muted">...</div>
+        </div>
+        <div class="avatar" id="user-avatar-initial">?</div>
+        <button id="logout-btn" class="btn btn-outline" style="padding: 5px 15px; font-size: 12px;">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content container">
+    
+    <div class="dashboard-grid">
+      
+      <!-- Sidebar Navigation -->
+      <aside>
+        <div class="card p-6 mb-6">
+          <div class="side-nav">
+            <a href="#" class="side-nav-item active"><i class="fas fa-th-large"></i> Dashboard</a>
+            <a href="#" class="side-nav-item" onclick="document.getElementById('newTicketModal').classList.add('active')"><i class="fas fa-plus-circle"></i> Raise Ticket</a>
+            <a href="#" class="side-nav-item"><i class="fas fa-history"></i> Logs</a>
+            <a href="#" class="side-nav-item"><i class="fas fa-cog"></i> Settings</a>
+          </div>
+        </div>
+
+        <div class="card p-6">
+          <h4 class="mb-4">System Notifications</h4>
+          <div class="text-xs text-muted" style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="border-left: 2px solid var(--primary-color); padding-left: 10px;">
+              <strong>New Feature:</strong> Internal chat is now active for all tickets.
+            </div>
+            <div style="border-left: 2px solid var(--success); padding-left: 10px;">
+              <strong>Email Sync:</strong> Automatic alerts sent to Dept Heads.
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Panel -->
+      <div class="content-panel">
+        
+        <!-- Stats Row -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-inbox"></i></div>
+            <div class="stat-info">
+              <h3 id="stat-total">0</h3>
+              <p>Total Viewable</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--warning)"><i class="fas fa-clock"></i></div>
+            <div class="stat-info">
+              <h3 id="stat-active">0</h3>
+              <p>Active Tasks</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--success)"><i class="fas fa-check-double"></i></div>
+            <div class="stat-info">
+              <h3 id="stat-completed">0</h3>
+              <p>Resolved</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ticket Table Card -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Issue Tracking List</h3>
+            <div class="flex gap-2">
+              <button class="btn btn-outline" style="padding: 5px 10px; font-size: 12px;"><i class="fas fa-filter"></i> Filter</button>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div id="ticket-list-container">
+              <!-- Tickets via JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Ticket Detail Modal (with Chat) -->
+  <div id="detailModal" class="modal">
+    <div class="modal-content" style="max-width: 800px;">
+      <div class="modal-header">
+        <h3>Ticket Workspace</h3>
+        <button class="close-btn" onclick="closeDetailModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div id="detailModalBody" class="p-0">
+        <!-- Content via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- New Ticket Modal -->
+  <div id="newTicketModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Raise Internal Issue</h3>
+        <button class="close-btn" onclick="document.getElementById('newTicketModal').classList.remove('active')"><i class="fas fa-times"></i></button>
+      </div>
+      <form id="newTicketForm" onsubmit="handleNewTicket(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Subject / Issue Title</label>
+            <input type="text" id="new-title" class="form-control" required placeholder="Example: PC not turning on">
+          </div>
+          <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Target Department</label>
+              <select id="new-dept" class="form-control" required>
+                <option value="IT Support">IT Support</option>
+                <option value="Human Resources">Human Resources</option>
+                <option value="Maintenance & Facility">Maintenance & Facility</option>
+                <option value="Medical Equipment">Medical Equipment</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Priority Level</label>
+              <select id="new-priority" class="form-control">
+                <option value="Low">Low</option>
+                <option value="Medium" selected>Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Detailed Description</label>
+            <textarea id="new-desc" class="form-control" required style="height: 120px;"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="document.getElementById('newTicketModal').classList.remove('active')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Submit to Department Head</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Kuwait Hospital Ticketing</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="container header-content">
+      <a href="index.html" class="header-logo">
+        <i class="fas fa-hospital-symbol" style="font-size: 1.5rem;"></i>
+        Kuwait Hospital <span class="text-sm text-muted" style="font-weight: 400">| Admin</span>
+      </a>
+      <div class="user-profile">
+        <span class="text-sm font-semibold hidden md-block">System Admin</span>
+        <div class="avatar" style="background-color: #ef4444">A</div>
+        <a href="index.html" class="btn btn-outline" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content container">
+    
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-ticket-alt"></i></div>
+        <div class="stat-info">
+          <h3 id="totalTickets">0</h3>
+          <p>Total Tickets</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background-color: rgba(245, 158, 11, 0.1); color: var(--warning)"><i class="fas fa-exclamation-circle"></i></div>
+        <div class="stat-info">
+          <h3 id="openTickets">0</h3>
+          <p>Open / Pending</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background-color: rgba(16, 185, 129, 0.1); color: var(--success)"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-info">
+          <h3 id="resolvedTickets">0</h3>
+          <p>Resolved</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ticket Management Panel -->
+    <div class="card">
+      <div class="card-header">
+        <h3>Manage Tickets</h3>
+        <div>
+          <select id="statusFilter" class="form-control" style="width: 200px">
+            <option value="All">All Statuses</option>
+            <option value="Open">Open</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Resolved">Resolved</option>
+          </select>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div id="adminTicketList" class="ticket-list">
+          <!-- Tickets loaded via JS -->
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Admin Ticket View Modal -->
+  <div id="adminTicketModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3>Ticket Details</h3>
+        <button class="close-btn" onclick="closeAdminModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div id="adminModalBody" class="modal-body p-0">
+        <!-- Content loaded via JS -->
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

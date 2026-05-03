@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Portal - Kuwait Hospital Ticketing</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="container header-content">
+      <a href="index.html" class="header-logo">
+        <i class="fas fa-hospital-symbol" style="font-size: 1.5rem;"></i>
+        Kuwait Hospital
+      </a>
+      <div class="user-profile">
+        <span class="text-sm font-semibold hidden md-block">Welcome, Employee</span>
+        <div class="avatar">E</div>
+        <a href="index.html" class="btn btn-outline" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content container">
+    <div class="dashboard-grid">
+      
+      <!-- Sidebar / Actions -->
+      <aside>
+        <div class="card p-6">
+          <h3 class="font-bold mb-4">Need Help?</h3>
+          <p class="text-muted text-sm mb-6">Raise a ticket to notify our support departments about any issues you are facing.</p>
+          <button id="newTicketBtn" class="btn btn-primary" style="width: 100%; justify-content: center;">
+            <i class="fas fa-plus"></i> Raise New Ticket
+          </button>
+        </div>
+      </aside>
+
+      <!-- Main Panel -->
+      <div class="card">
+        <div class="card-header">
+          <h3>My Tickets</h3>
+        </div>
+        <div class="card-body p-0">
+          <div id="userTicketList" class="ticket-list">
+            <!-- Tickets loaded via JS -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- New Ticket Modal -->
+  <div id="ticketModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Raise New Ticket</h3>
+        <button class="close-btn"><i class="fas fa-times"></i></button>
+      </div>
+      <form id="ticketForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Subject</label>
+            <input type="text" id="title" class="form-control" placeholder="Brief summary of the issue" required>
+          </div>
+          <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Department</label>
+              <select id="department" class="form-control" required>
+                <option value="">Select Department...</option>
+                <option value="IT Support">IT Support</option>
+                <option value="Maintenance & Facility">Maintenance & Facility</option>
+                <option value="Human Resources">Human Resources</option>
+                <option value="Billing & Finance">Billing & Finance</option>
+                <option value="Medical Equipment">Medical Equipment</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Priority</label>
+              <select id="priority" class="form-control" required>
+                <option value="Low">Low</option>
+                <option value="Medium" selected>Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea id="description" class="form-control" placeholder="Provide detailed information about your issue..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="cancelBtn" class="btn btn-outline">Cancel</button>
+          <button type="submit" class="btn btn-primary">Submit Ticket</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
