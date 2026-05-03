@@ -8,7 +8,7 @@ class Ticket {
     this.department = department;
     this.priority = priority;
     this.description = description;
-    this.status = 'Open';
+    this.status = 'Raised';
     this.createdBy = createdBy;
     this.createdById = createdById;
     this.createdAt = new Date().toISOString();
@@ -101,16 +101,24 @@ const formatDate = (dateString) => {
 };
 
 const getStatusBadgeClass = (status) => {
+  if(status === 'Raised') return 'badge-raised';
   if(status === 'Open') return 'badge-open';
   if(status === 'In Progress') return 'badge-progress';
   if(status === 'Resolved') return 'badge-resolved';
-  return 'badge-open';
+  if(status === 'Closed') return 'badge-closed';
+  return 'badge-raised';
 };
 
 // 4. Page Logic
 document.addEventListener('DOMContentLoaded', () => {
   const currentUser = State.getCurrentUser();
   const path = window.location.pathname;
+
+  // USER PAGE
+  if (document.getElementById('userTicketList')) {
+    if (!currentUser) { window.location.href = 'index.html'; return; }
+    renderUserPage();
+  }
 
   // LOGIN PAGE
   if (document.getElementById('loginForm')) {
@@ -150,6 +158,11 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.removeItem('currentUser');
       window.location.href = 'index.html';
     });
+  }
+
+  // ADMIN PAGE
+  if (document.getElementById('adminTicketList')) {
+    renderAdminPage();
   }
 });
 
@@ -200,6 +213,120 @@ function renderDashboard() {
     </div>
   `).join('');
 }
+
+function renderAdminPage() {
+  const tickets = State.getTickets();
+  renderAdminTickets(tickets);
+  updateAdminStats(tickets);
+  initAdminFilters();
+}
+
+function updateAdminStats(tickets) {
+  document.getElementById('totalTickets').textContent = tickets.length;
+  document.getElementById('openTickets').textContent = tickets.filter(t => t.status !== 'Resolved').length;
+  document.getElementById('resolvedTickets').textContent = tickets.filter(t => t.status === 'Resolved').length;
+}
+
+function initAdminFilters() {
+  const filter = document.getElementById('statusFilter');
+  if (!filter) return;
+
+  filter.addEventListener('change', () => {
+    const status = filter.value;
+    const tickets = State.getTickets();
+    const filteredTickets = status === 'All' ? tickets : tickets.filter(t => t.status === status);
+    renderAdminTickets(filteredTickets);
+  });
+}
+
+function renderAdminTickets(tickets) {
+  const listEl = document.getElementById('adminTicketList');
+  if (!listEl) return;
+
+  if (tickets.length === 0) {
+    listEl.innerHTML = `<div class="empty-state"><i class="fas fa-folder-open"></i><p>No tickets found.</p></div>`;
+    return;
+  }
+
+  listEl.innerHTML = tickets.map(t => `
+    <div class="ticket-item" onclick="openAdminTicket('${t.id}')">
+      <div class="ticket-info">
+        <h4>${t.title} <span class="text-xs text-muted" style="font-weight:400">#${t.id}</span></h4>
+        <div class="ticket-meta">
+          <span><i class="far fa-user"></i> ${t.createdBy}</span>
+          <span><i class="fas fa-building"></i> ${t.department}</span>
+          <span><i class="fas fa-user-tag"></i> ${t.assignedToName}</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="badge ${getStatusBadgeClass(t.status)}">${t.status}</span>
+        <i class="fas fa-chevron-right text-muted"></i>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.openAdminTicket = (id) => {
+  const ticket = State.getTickets().find(t => t.id === id);
+  const modal = document.getElementById('adminTicketModal');
+  const body = document.getElementById('adminModalBody');
+  if (!ticket || !modal || !body) return;
+
+  body.innerHTML = `
+    <div class="p-6">
+      <div class="flex justify-between items-start mb-6">
+        <div>
+          <h2 class="text-primary">${ticket.title}</h2>
+          <p class="text-muted text-sm">Raised by ${ticket.createdBy} on ${formatDate(ticket.createdAt)}</p>
+        </div>
+        <span class="badge ${getStatusBadgeClass(ticket.status)}">${ticket.status}</span>
+      </div>
+      <div class="grid gap-6" style="grid-template-columns: 1fr 1fr;">
+        <div>
+          <label class="text-xs font-bold text-muted uppercase">Department</label>
+          <p>${ticket.department}</p>
+        </div>
+        <div>
+          <label class="text-xs font-bold text-muted uppercase">Priority</label>
+          <p>${ticket.priority}</p>
+        </div>
+      </div>
+      <div class="mt-6">
+        <label class="text-xs font-bold text-muted uppercase">Description</label>
+        <div class="bg-light p-4 rounded mt-2" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:15px;">
+          ${ticket.description}
+        </div>
+      </div>
+      <div class="admin-actions mt-6">
+        <label class="font-semibold text-sm">Update Status</label>
+        <div class="flex items-center gap-3 mt-3">
+          <select id="adminStatusSelect" class="form-control" style="width: auto;">
+            <option value="Raised" ${ticket.status === 'Raised' ? 'selected' : ''}>Raised</option>
+            <option value="Open" ${ticket.status === 'Open' ? 'selected' : ''}>Open</option>
+            <option value="In Progress" ${ticket.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+            <option value="Resolved" ${ticket.status === 'Resolved' ? 'selected' : ''}>Resolved</option>
+          </select>
+          <button class="btn btn-outline" onclick="handleAdminStatusUpdate('${ticket.id}')">Update</button>
+        </div>
+      </div>
+      <div class="mt-6">
+        <label class="text-xs font-bold text-muted uppercase">Assigned To</label>
+        <p>${ticket.assignedToName}</p>
+      </div>
+    </div>
+  `;
+
+  modal.classList.add('active');
+};
+
+window.closeAdminModal = () => document.getElementById('adminTicketModal').classList.remove('active');
+
+window.handleAdminStatusUpdate = (id) => {
+  const status = document.getElementById('adminStatusSelect').value;
+  State.updateTicketStatus(id, status);
+  renderAdminPage();
+  openAdminTicket(id);
+};
 
 window.openTicketDetails = (id) => {
   const ticket = State.getTickets().find(t => t.id === id);

@@ -287,6 +287,8 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 .badge-open { background-color: rgba(245, 158, 11, 0.1); color: var(--warning); }
 .badge-progress { background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; }
 .badge-resolved { background-color: rgba(16, 185, 129, 0.1); color: var(--success); }
+.badge-raised { background-color: rgba(99, 102, 241, 0.1); color: #6366f1; }
+.badge-closed { background-color: rgba(107, 114, 128, 0.1); color: #6b7280; }
 
 .badge-dept {
   background-color: rgba(26, 43, 86, 0.1);
