@@ -243,14 +243,14 @@ const DbUsers = JSON.parse(localStorage.getItem('kh_v2_u')) || [
   { id: 'u5', name: 'Dr. Laila', email: 'laila@kuwaithosp.com', pass: 'laila123', role: 'User', dept: 'Cardiology', avatar: 'DL' },
   { id: 'u6', name: 'Nurse Joy', email: 'joy@kuwaithosp.com', pass: 'joy123', role: 'User', dept: 'Nursing', avatar: 'NJ' },
 ];
-let tickets = JSON.parse(localStorage.getItem('kh_v2_t')) || [
+let tickets = JSON.parse(localStorage.getItem('tickets')) || [
   { id: 1001, title: 'PACS Imaging Offline - Radiology', dept: 'IT Support', pri: 'Critical', status: 'In Progress', user: 'Dr. Laila', assigned: 'u4', msgs: [] },
   { id: 1002, title: 'Network Sync Failure - Pharmacy', dept: 'IT Support', pri: 'High', status: 'Open', user: 'Sarah Al-Rashid', assigned: null, msgs: [] },
   { id: 1003, title: 'Ward 4 AC Unit Maintenance', dept: 'IT Support', pri: 'Medium', status: 'Resolved', user: 'Nurse Joy', assigned: 'u4', msgs: [] },
   { id: 1004, title: 'Employee Overtime Discrepancy', dept: 'HR Operations', pri: 'Medium', status: 'Open', user: 'Dr. Laila', assigned: null, msgs: [] },
   { id: 1005, title: 'New Staff Onboarding (30 Pax)', dept: 'HR Operations', pri: 'High', status: 'In Progress', user: 'Ahmed Mansour', assigned: null, msgs: [] },
 ];
-let currentUser = null, activeTid = null, charts = {};
+let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null, activeTid = null, charts = {}; 
 
 function quickSet(e,p){ document.getElementById('login-email').value=e; document.getElementById('login-pass').value=p; }
 function doLogin() {
@@ -258,6 +258,12 @@ function doLogin() {
   const u = DbUsers.find(x => x.email === e && x.pass === p);
   if(!u) return document.getElementById('login-err').style.display='block';
   currentUser = u;
+  localStorage.setItem('currentUser', JSON.stringify(currentUser));
+  startSession(u);
+}
+function doLogout() { currentUser=null; localStorage.removeItem('currentUser'); location.reload(); }
+
+function startSession(u) {
   document.getElementById('page-login').classList.remove('active');
   document.getElementById('page-app').classList.add('active');
   document.getElementById('nav-name').textContent = u.name;
@@ -267,7 +273,10 @@ function doLogin() {
   document.getElementById('nav-mgmt-only').style.display = (u.role === 'Super Admin' || u.role === 'Dept Head') ? 'block' : 'none';
   initCharts(); syncUI();
 }
-function doLogout() { currentUser=null; location.reload(); }
+
+if (currentUser) {
+  startSession(currentUser);
+} 
 
 function syncUI() {
   const my = tickets.filter(t => currentUser.role === 'Super Admin' || t.user === currentUser.name || t.dept === currentUser.dept || t.assigned === currentUser.id);
@@ -366,7 +375,7 @@ function applyChanges() {
   const t = tickets.find(x => x.id == activeTid);
   t.assigned = document.getElementById('md-assign').value;
   t.status = document.getElementById('md-status').value;
-  localStorage.setItem('kh_v2_t', JSON.stringify(tickets));
+  localStorage.setItem('tickets', JSON.stringify(tickets));
   syncUI(); viewDt(activeTid);
 }
 
@@ -375,7 +384,7 @@ function doSend() {
   const t = tickets.find(x => x.id == activeTid);
   if(!t.msgs) t.msgs = [];
   t.msgs.push({ u: currentUser.name, txt: inp.value, t: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) });
-  localStorage.setItem('kh_v2_t', JSON.stringify(tickets)); inp.value=''; refreshC();
+  localStorage.setItem('tickets', JSON.stringify(tickets)); inp.value=''; refreshC();
 }
 
 function refreshC() {
@@ -397,14 +406,14 @@ function initCharts() {
   charts.pie = new Chart(ctx2, { type: 'doughnut', data: { datasets: [{ data: [80, 20], backgroundColor: ['#00C9A7', '#F1F5F9'] }] }, options: { cutout: '80%' } });
 }
 
-setInterval(() => { if(document.getElementById('chat-panel').classList.contains('open')) { tickets = JSON.parse(localStorage.getItem('kh_v2_t')) || []; refreshC(); } }, 2000);
+setInterval(() => { if(document.getElementById('chat-panel').classList.contains('open')) { tickets = JSON.parse(localStorage.getItem('tickets')) || []; refreshC(); } }, 2000);
 function openChat() { document.getElementById('chat-panel').classList.toggle('open'); if(document.getElementById('chat-panel').classList.contains('open')) refreshC(); }
 function closeDt() { document.getElementById('modal-dt').classList.remove('open'); }
 function openCreateModal() { document.getElementById('modal-new').classList.add('open'); }
 function closeNew() { document.getElementById('modal-new').classList.remove('open'); }
 function doSave() {
   tickets.unshift({ id: Math.floor(1000+Math.random()*8999), title: document.getElementById('nt-title').value, dept: document.getElementById('nt-dept').value, status: 'Open', user: currentUser.name, assigned: null, msgs: [] });
-  localStorage.setItem('kh_v2_t', JSON.stringify(tickets)); closeNew(); syncUI();
+  localStorage.setItem('tickets', JSON.stringify(tickets)); closeNew(); syncUI();
 }
 function saveUser() {
   const n = document.getElementById('um-name').value;
