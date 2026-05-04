@@ -1,8 +1,28 @@
 // USER PAGE FUNCTIONS
 
+function populateDepartmentDropdown() {
+  const depts = State.getDepartments();
+  const select = document.getElementById('department');
+  if (!select) return;
+  
+  // Clear existing options except the first one
+  select.innerHTML = '<option value="">Select Department...</option>';
+  
+  // Add departments from storage
+  depts.forEach(dept => {
+    const option = document.createElement('option');
+    option.value = dept.name;
+    option.textContent = dept.name;
+    select.appendChild(option);
+  });
+}
+
 function renderUserPage() {
   const user = State.getCurrentUser();
   const tickets = State.getTickets().filter(t => t.createdById === user.id);
+  
+  // Populate department dropdown
+  populateDepartmentDropdown();
   
   // Setup modal event listeners
   const modal = document.getElementById('ticketModal');
@@ -14,6 +34,7 @@ function renderUserPage() {
   if (newTicketBtn) {
     newTicketBtn.addEventListener('click', () => {
       modal.classList.add('active');
+      populateDepartmentDropdown(); // Refresh in case departments were added
     });
   }
   
@@ -65,7 +86,7 @@ function handleUserTicketSubmit() {
   document.getElementById('ticketForm').reset();
   document.getElementById('ticketModal').classList.remove('active');
   
-  alert(`✓ Ticket ${ticket.id} has been raised!\nStatus: ${ticket.status}\nYour ticket has been sent to ${department} department.`);
+  alert(`✓ Ticket ${ticket.id} has been raised!\nStatus: ${ticket.status}\nYour ticket has been sent to the Super Admin for assignment.`);
   
   renderUserTickets();
 }

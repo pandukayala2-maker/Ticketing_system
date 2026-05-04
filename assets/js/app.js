@@ -1,4 +1,4 @@
-// --- app.js (v2: Advanced Roles & Assignment) ---
+// --- app.js (v3: Departments Management & Assignment) ---
 
 // 1. Data Models
 class Ticket {
@@ -18,7 +18,18 @@ class Ticket {
   }
 }
 
-const Users = [
+class Department {
+  constructor(name, head) {
+    this.id = 'DEPT-' + Math.floor(1000 + Math.random() * 9000);
+    this.name = name;
+    this.headId = head; // User ID of dept head
+    this.headName = Users.find(u => u.id === head)?.name || 'Unassigned';
+    this.members = []; // Array of user IDs
+    this.createdAt = new Date().toISOString();
+  }
+}
+
+let Users = [
   { id: 'u1', name: 'Affan Kaskar', role: 'super_admin', dept: 'Management', email: 'admin@kuwaithospital.com' },
   { id: 'u2', name: 'Sarah IT', role: 'dept_head', dept: 'IT Support', email: 'it.head@kuwaithospital.com' },
   { id: 'u3', name: 'Ahmed HR', role: 'dept_head', dept: 'Human Resources', email: 'hr.head@kuwaithospital.com' },
@@ -34,13 +45,61 @@ const State = {
   setCurrentUser: (user) => localStorage.setItem('currentUser', JSON.stringify(user)),
   getTickets: () => JSON.parse(localStorage.getItem('tickets')) || [],
   saveTickets: (tickets) => localStorage.setItem('tickets', JSON.stringify(tickets)),
+  getDepartments: () => JSON.parse(localStorage.getItem('departments')) || [],
+  saveDepartments: (depts) => localStorage.setItem('departments', JSON.stringify(depts)),
   
+  createDepartment: (name, headId) => {
+    const dept = new Department(name, headId);
+    const depts = State.getDepartments();
+    depts.push(dept);
+    State.saveDepartments(depts);
+    console.log(`Department created: ${name}`);
+    return dept;
+  },
+
+  addMemberToDept: (deptId, userId) => {
+    const depts = State.getDepartments();
+    const dept = depts.find(d => d.id === deptId);
+    if (dept && !dept.members.includes(userId)) {
+      dept.members.push(userId);
+      State.saveDepartments(depts);
+      console.log(`User added to department`);
+    }
+  },
+
+  removeMemberFromDept: (deptId, userId) => {
+    const depts = State.getDepartments();
+    const dept = depts.find(d => d.id === deptId);
+    if (dept) {
+      dept.members = dept.members.filter(u => u !== userId);
+      State.saveDepartments(depts);
+    }
+  },
+
+  getDeptMembers: (deptId) => {
+    const dept = State.getDepartments().find(d => d.id === deptId);
+    if (!dept) return [];
+    return Users.filter(u => dept.members.includes(u.id) || u.id === dept.headId);
+  },
+
   addTicket: (ticket) => {
     const tickets = State.getTickets();
     tickets.unshift(ticket);
     State.saveTickets(tickets);
     // Simulate Email Sending
-    console.log(`EMAIL SIMULATION: New Ticket ${ticket.id} sent to ${ticket.department} Head.`);
+    console.log(`EMAIL SIMULATION: New Ticket ${ticket.id} sent to Super Admin for assignment.`);
+  },
+
+  getDepartmentByName: (name) => {
+    return State.getDepartments().find(d => d.name === name);
+  },
+
+  getAssignableUsers: (departmentName) => {
+    const dept = State.getDepartmentByName(departmentName);
+    if (!dept) return [];
+    const head = Users.find(u => u.id === dept.headId);
+    const members = Users.filter(u => dept.members.includes(u.id));
+    return [head, ...members].filter(Boolean);
   },
 
   assignTicket: (ticketId, memberId) => {
@@ -82,6 +141,17 @@ const State = {
   },
 
   init: () => {
+    // Initialize departments if not exists
+    if (!localStorage.getItem('departments')) {
+      const initialDepts = [
+        new Department('IT Support', 'u2'),
+        new Department('Human Resources', 'u3'),
+      ];
+      initialDepts[0].members = ['u4', 'u5'];
+      initialDepts[1].members = ['u6'];
+      State.saveDepartments(initialDepts);
+    }
+
     if (!localStorage.getItem('tickets')) {
       const initialTickets = [
         new Ticket('Network Failure Ward A', 'IT Support', 'High', 'Internet is down in Ward A.', 'Regular Employee', 'u7'),
@@ -93,6 +163,29 @@ const State = {
 };
 
 State.init();
+
+// Get tickets visible to a specific user based on role and department
+const getVisibleTickets = (user) => {
+  const tickets = State.getTickets();
+  
+  // Super admin sees all tickets
+  if (user.role === 'super_admin') {
+    return tickets;
+  }
+  
+  // Dept head sees tickets raised to their department + tickets they created
+  if (user.role === 'dept_head') {
+    return tickets.filter(t => t.department === user.dept || t.createdById === user.id);
+  }
+  
+  // Dept member sees tickets assigned to them + tickets they created
+  if (user.role === 'dept_member') {
+    return tickets.filter(t => t.assignedToId === user.id || t.createdById === user.id);
+  }
+  
+  // Regular employee only sees their own
+  return tickets.filter(t => t.createdById === user.id);
+};
 
 // 3. UI Helpers
 const formatDate = (dateString) => {
@@ -162,6 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ADMIN PAGE
   if (document.getElementById('adminTicketList')) {
+    if (!currentUser) { window.location.href = 'index.html'; return; }
     renderAdminPage();
   }
 });
@@ -215,7 +309,32 @@ function renderDashboard() {
 }
 
 function renderAdminPage() {
-  const tickets = State.getTickets();
+  const user = State.getCurrentUser();
+  
+  // Update header with current user info
+  const userSpan = document.querySelector('.user-profile span.font-semibold');
+  if (userSpan) {
+    userSpan.textContent = `${user.name} (${user.role.replace('_', ' ')})`;
+  }
+  
+  const avatarDiv = document.querySelector('.user-profile .avatar');
+  if (avatarDiv) {
+    avatarDiv.textContent = user.name.charAt(0).toUpperCase();
+  }
+  
+  // Setup logout
+  const logoutLink = document.querySelector('.user-profile a');
+  if (logoutLink) {
+    logoutLink.addEventListener('click', (e) => {
+      localStorage.removeItem('currentUser');
+    });
+  }
+  
+  let tickets = State.getTickets();
+  
+  // Filter tickets based on user role and department
+  tickets = getVisibleTickets(user);
+  
   renderAdminTickets(tickets);
   updateAdminStats(tickets);
   initAdminFilters();
@@ -232,8 +351,14 @@ function initAdminFilters() {
   if (!filter) return;
 
   filter.addEventListener('change', () => {
+    const user = State.getCurrentUser();
+    let tickets = State.getTickets();
+    
+    // Apply role-based filtering
+    tickets = getVisibleTickets(user);
+    
+    // Apply status filter
     const status = filter.value;
-    const tickets = State.getTickets();
     const filteredTickets = status === 'All' ? tickets : tickets.filter(t => t.status === status);
     renderAdminTickets(filteredTickets);
   });
@@ -267,10 +392,28 @@ function renderAdminTickets(tickets) {
 }
 
 window.openAdminTicket = (id) => {
+  const user = State.getCurrentUser();
   const ticket = State.getTickets().find(t => t.id === id);
   const modal = document.getElementById('adminTicketModal');
   const body = document.getElementById('adminModalBody');
-  if (!ticket || !modal || !body) return;
+  if (!ticket || !modal || !body || !user) return;
+
+  const assignOptions = State.getAssignableUsers(ticket.department).map(member => `
+            <option value="${member.id}" ${ticket.assignedToId === member.id ? 'selected' : ''}>${member.name} (${member.role.replace('_', ' ')})</option>
+          `).join('');
+
+  const assignSection = user.role === 'super_admin' ? `
+      <div class="admin-actions mt-6">
+        <label class="font-semibold text-sm mb-2 block"><i class="fas fa-user-plus"></i> Assign Ticket</label>
+        <div class="flex items-center gap-3">
+          <select id="adminAssignSelect" class="form-control" style="width: auto;">
+            <option value="">Choose assignee...</option>
+            ${assignOptions}
+          </select>
+          <button class="btn btn-primary" onclick="handleAdminAssignment('${ticket.id}')">Assign</button>
+        </div>
+      </div>
+    ` : '';
 
   body.innerHTML = `
     <div class="p-6">
@@ -297,6 +440,7 @@ window.openAdminTicket = (id) => {
           ${ticket.description}
         </div>
       </div>
+      ${assignSection}
       <div class="admin-actions mt-6">
         <label class="font-semibold text-sm">Update Status</label>
         <div class="flex items-center gap-3 mt-3">
@@ -324,6 +468,17 @@ window.closeAdminModal = () => document.getElementById('adminTicketModal').class
 window.handleAdminStatusUpdate = (id) => {
   const status = document.getElementById('adminStatusSelect').value;
   State.updateTicketStatus(id, status);
+  renderAdminPage();
+  openAdminTicket(id);
+};
+
+window.handleAdminAssignment = (id) => {
+  const assigneeId = document.getElementById('adminAssignSelect').value;
+  if (!assigneeId) {
+    alert('Please choose a user to assign this ticket.');
+    return;
+  }
+  State.assignTicket(id, assigneeId);
   renderAdminPage();
   openAdminTicket(id);
 };
@@ -463,4 +618,156 @@ window.handleNewTicket = (e) => {
   document.getElementById('newTicketForm').reset();
   renderDashboard();
   alert('Ticket raised and department head notified!');
+};
+
+// ===== DEPARTMENT MANAGEMENT =====
+window.renderDepartmentsPage = () => {
+  const container = document.getElementById('dept-management-container');
+  if (!container) return;
+  
+  const depts = State.getDepartments();
+  
+  let html = `
+    <div style="margin-bottom: 30px;">
+      <button onclick="openCreateDeptModal()" style="padding: 12px 24px; background: var(--navy); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+        <i class="fas fa-plus"></i> Create New Department
+      </button>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 25px;">
+  `;
+  
+  depts.forEach(dept => {
+    const headUser = Users.find(u => u.id === dept.headId);
+    const memberUsers = Users.filter(u => dept.members.includes(u.id));
+    
+    html += `
+      <div style="background: var(--white); border: 1px solid #f1f5f9; border-radius: 16px; padding: 24px; box-shadow: 0 10px 25px rgba(15,23,42,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+          <h3 style="margin: 0; color: var(--navy); font-size: 18px;">${dept.name}</h3>
+          <button onclick="deleteDepartment('${dept.id}')" style="background: #fee2e2; color: #dc2626; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Delete</button>
+        </div>
+        
+        <div style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--slate); text-transform: uppercase;">Department Head</label>
+          <p style="margin: 8px 0 0 0; color: var(--navy); font-weight: 600;">${headUser?.name || 'Unassigned'}</p>
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--slate); text-transform: uppercase;">Members (${memberUsers.length})</label>
+          <div style="margin-top: 8px; max-height: 150px; overflow-y: auto;">
+            ${memberUsers.length === 0 ? '<p style="color: #999; font-size: 12px;">No members assigned</p>' : memberUsers.map(m => `
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 13px;">
+                <span>${m.name}</span>
+                <button onclick="removeMemberFromDept('${dept.id}', '${m.id}')" style="background: none; border: none; color: #dc2626; cursor: pointer; font-size: 12px;">Remove</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        
+        <button onclick="openAddMemberModal('${dept.id}', '${dept.name}')" style="width: 100%; padding: 10px; background: var(--navy-light); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;">
+          <i class="fas fa-user-plus"></i> Add Member
+        </button>
+      </div>
+    `;
+  });
+  
+  html += `</div>`;
+  container.innerHTML = html;
+};
+
+window.openCreateDeptModal = () => {
+  const modal = document.getElementById('modal-create-dept');
+  const headSelect = document.getElementById('cd-head');
+  
+  // Populate heads dropdown
+  headSelect.innerHTML = '<option value="">Select Head...</option>';
+  Users.filter(u => u.role === 'super_admin' || u.role === 'dept_head' || u.role === 'dept_member').forEach(u => {
+    const option = document.createElement('option');
+    option.value = u.id;
+    option.textContent = `${u.name} (${u.role})`;
+    headSelect.appendChild(option);
+  });
+  
+  // Clear input
+  document.getElementById('cd-name').value = '';
+  
+  modal.classList.add('open');
+};
+
+window.closeCreateDeptModal = () => {
+  document.getElementById('modal-create-dept').classList.remove('open');
+};
+
+window.submitCreateDept = () => {
+  const name = document.getElementById('cd-name').value.trim();
+  const headId = document.getElementById('cd-head').value;
+  
+  if (!name || !headId) {
+    alert('Please fill in all fields');
+    return;
+  }
+  
+  State.createDepartment(name, headId);
+  closeCreateDeptModal();
+  renderDepartmentsPage();
+  alert('Department created successfully!');
+};
+
+window.currentDeptId = null;
+
+window.openAddMemberModal = (deptId, deptName) => {
+  const modal = document.getElementById('modal-add-member');
+  const memberSelect = document.getElementById('am-member');
+  
+  window.currentDeptId = deptId;
+  
+  // Get dept members
+  const dept = State.getDepartments().find(d => d.id === deptId);
+  const currentMembers = dept ? dept.members : [];
+  
+  // Populate members dropdown with non-members
+  memberSelect.innerHTML = '<option value="">Select Member...</option>';
+  Users.filter(u => u.role !== 'super_admin' && !currentMembers.includes(u.id) && u.id !== dept?.headId).forEach(u => {
+    const option = document.createElement('option');
+    option.value = u.id;
+    option.textContent = `${u.name} (${u.role})`;
+    memberSelect.appendChild(option);
+  });
+  
+  modal.classList.add('open');
+};
+
+window.closeAddMemberModal = () => {
+  document.getElementById('modal-add-member').classList.remove('open');
+};
+
+window.submitAddMember = () => {
+  const userId = document.getElementById('am-member').value;
+  
+  if (!userId) {
+    alert('Please select a member');
+    return;
+  }
+  
+  const user = Users.find(u => u.id === userId);
+  State.addMemberToDept(window.currentDeptId, userId);
+  closeAddMemberModal();
+  renderDepartmentsPage();
+  alert(`${user.name} added to department!`);
+};
+
+window.removeMemberFromDept = (deptId, userId) => {
+  if (confirm('Remove this member from the department?')) {
+    State.removeMemberFromDept(deptId, userId);
+    renderDepartmentsPage();
+  }
+};
+
+window.deleteDepartment = (deptId) => {
+  if (confirm('Delete this department? This action cannot be undone.')) {
+    const depts = State.getDepartments();
+    const filtered = depts.filter(d => d.id !== deptId);
+    State.saveDepartments(filtered);
+    renderDepartmentsPage();
+  }
 };

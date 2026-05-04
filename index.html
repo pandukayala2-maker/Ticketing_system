@@ -152,6 +152,7 @@
         <div id="nav-super-only" style="display:none;">
           <div class="nav-label">System Control</div>
           <li class="nav-item" onclick="goView('users')"><i class="fas fa-user-shield"></i> Identity Access</li>
+          <li class="nav-item" onclick="goView('departments')"><i class="fas fa-building"></i> Departments</li>
         </div>
         <div id="nav-mgmt-only" style="display:none;">
           <div class="nav-label">Administration</div>
@@ -194,6 +195,10 @@
           <div class="table-container"><div class="table-head"><h4>Resource Load Map</h4></div><table class="cust-table"><thead><tr><th>Resource Name</th><th>Specialization</th><th>Status</th><th>Workload Analysis</th></tr></thead><tbody id="mem-rows"></tbody></table></div>
         </div>
 
+        <div id="view-departments" class="view-panel" style="display:none;">
+          <div id="dept-management-container"></div>
+        </div>
+
       </div>
     </main>
   </div>
@@ -231,6 +236,16 @@
 
 <div class="modal-overlay" id="modal-new">
   <div class="modal-card" style="max-width:500px;"><div class="modal-head"><h2>New Case</h2></div><div class="modal-body"><input class="input-field" id="nt-title" placeholder="Title"><select class="input-field" id="nt-dept"><option>IT Support</option><option>HR Operations</option><option>Pharmacy</option></select><select class="input-field" id="nt-pri"><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select><button class="btn-primary" onclick="doSave()">Submit</button><button class="btn-ghost" onclick="closeNew()">Abort</button></div></div>
+</div>
+
+<!-- CREATE DEPARTMENT MODAL -->
+<div class="modal-overlay" id="modal-create-dept">
+  <div class="modal-card" style="max-width:500px;"><div class="modal-head"><h2>Create Department</h2></div><div class="modal-body"><input class="input-field" id="cd-name" placeholder="Department Name"><label class="form-label">Department Head</label><select class="input-field" id="cd-head"></select><button class="btn-primary" onclick="submitCreateDept()">Create</button><button class="btn-ghost" onclick="closeCreateDeptModal()">Cancel</button></div></div>
+</div>
+
+<!-- ADD MEMBER MODAL -->
+<div class="modal-overlay" id="modal-add-member">
+  <div class="modal-card" style="max-width:500px;"><div class="modal-head"><h2>Add Member to Department</h2></div><div class="modal-body"><label class="form-label">Select Member</label><select class="input-field" id="am-member"></select><button class="btn-primary" onclick="submitAddMember()">Add</button><button class="btn-ghost" onclick="closeAddMemberModal()">Cancel</button></div></div>
 </div>
 
 <script>
@@ -314,6 +329,11 @@ function goView(v) {
   document.getElementById('view-'+v).style.display='block';
   document.getElementById('view-head').textContent = v.charAt(0).toUpperCase() + v.slice(1);
   document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  
+  // Handle special views
+  if (v === 'departments') {
+    renderDepartmentsPage();
+  }
 }
 
 function viewDt(id) {
@@ -421,5 +441,6 @@ function saveUser() {
   localStorage.setItem('kh_v2_u', JSON.stringify(DbUsers)); syncUI();
 }
 </script>
+<script src="assets/js/app.js"></script>
 </body>
 </html>
